@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles/cover.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="../scripts/auth/register.js"></script>
+</head>
+
+<body class="d-flex h-100 text-center text-bg-dark">
+    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+        <header class="mb-auto">
+            <div>
+                <h3 class="float-md-start mb-0">Inovate Habits</h3>
+                <nav class="nav nav-masthead justify-content-center float-md-end">
+                    <a class="nav-link fw-bold py-1 px-0 " href="../index.html">Home</a>
+                    <a class="nav-link fw-bold py-1 px-0 " aria-current="page" href="login.html">Entrar</a>
+                    <a class="nav-link fw-bold py-1 px-0 active" aria-current="page" href="#">Registrar-se</a>
+                </nav>
+            </div>
+        </header>
+        <main class="container d-flex align-items-center justify-content-center vh-100">
+            <div class="auth-card border rounded-3 shadow p-5 w-100" style="max-width: 400px;">
+                <h3 class="login-title mb-4 text-center ">Registrar-se</h3>
+
+                <form id="register-form" class="d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-start align-items-start flex-column">
+                        <label for="name" class="form-label">Nome</label>
+                        <input id="usernameInput" type="text" placeholder="Digite seu nome" class="form-control"  />
+                    </div>
+
+                    <div class="d-flex justify-content-start align-items-start flex-column">
+                        <label for="email" class="form-label">E-mail</label>
+                        <input id="emailInput" type="email" placeholder="Digite seu e-mail" class="form-control"  />
+                    </div>
+
+                    <div class="d-flex justify-content-start align-items-start flex-column">
+                        <label for="password" class="form-label">Senha</label>
+                        <input id="passwordInput" type="password" placeholder="Digite sua senha" class="form-control"
+                           />
+                    </div>
+
+                    <button type="submit" id="register" class="btn btn-primary w-100">Registrar</button>
+
+                </form>
+            </div>
+        </main>
+        <footer class="mt-auto text-white-50">
+
+        </footer>
+    </div>
+</body>
+
+
+</html>
