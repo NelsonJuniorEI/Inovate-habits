@@ -28,13 +28,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const supa = {
     insert: (data) => supabase.from("habits").insert(data).select().single(),
     update: (id, data) =>
-      supabase.from("habits").update(data).eq("id", id).select().single(),
+      supabase.from("habits").update(data).eq("id", id).eq("user_id", userId),
     delete: (id) => supabase.from("habits").delete().eq("id", id),
     fetch: () =>
       supabase
         .from("habits")
         .select("*")
         .eq("user_id", userId)
+        .order("archived", { ascending: true })
         .order("created_at", { ascending: false }),
     getById: (id) => supabase.from("habits").select("*").eq("id", id).single(),
   };
@@ -45,7 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const category = document.getElementById("habitoCategoria").value;
     const description = document.getElementById("habitoDescricao").value.trim();
     const frequency = document.getElementById("habitoFrequencia").value;
-    const archived = document.getElementById("habitoArquivado").value;
+    const archived =
+      document.getElementById("habitoArquivado").value === "true";
 
     if (!name) return alert("Preencha os campos obrigatórios.");
 
@@ -95,15 +97,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           <td class="text-center">${statusBadge}</td>
           <td class="text-center">${dataFormatada}</td>
           <td class="text-center">
-            <button class="btn btn-sm btn-light border" title="Editar" 
-                    data-bs-toggle="modal" data-bs-target="#modalEditarHabito" 
-                    onclick="preencherModalEdicao(${habito.id})">
+            <button class="btn btn-sm btn-light border" title="Editar" data-action="edit" data-id="${
+              habito.id
+            }">
               <i class="bi bi-pencil"></i>
             </button>
             ${
               habito.archived
-                ? `<button class="btn btn-sm btn-light border" title="Desarquivar" onclick="toggleArquivarHabito(${habito.id})"><i class="bi bi-box-arrow-up"></i></button>`
-                : `<button class="btn btn-sm btn-light border" title="Arquivar" onclick="toggleArquivarHabito(${habito.id})"><i class="bi bi-archive"></i></button>`
+                ? `<button class="btn btn-sm btn-light border" title="Desarquivar" data-action="toggle-archive" data-id="${habito.id}"><i class="bi bi-box-arrow-up"></i></button>`
+                : `<button class="btn btn-sm btn-light border" title="Arquivar" data-action="toggle-archive" data-id="${habito.id}"><i class="bi bi-archive"></i></button>`
             }
           </td>
         </tr>
@@ -137,7 +139,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateSummary();
   }
 
-  window.preencherModalEdicao = async (id) => {
+  async function preencherModalEdicao(id) {
     const { data, error } = await supa.getById(id);
     if (error) return alertError("Erro ao carregar hábito para edição", error);
 
@@ -148,7 +150,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("habitoArquivadoEdit").value = data.archived;
 
     editItemId = data.id;
-  };
+    modalEditarHabito.show();
+  }
 
   async function salvarEdicaoHabito() {
     if (!editItemId) return;
@@ -158,45 +161,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       category: document.getElementById("habitoCategoriaEdit").value,
       description: document.getElementById("habitoDescricaoEdit").value.trim(),
       frequency: document.getElementById("habitoFrequenciaEdit").value,
-      archived: document.getElementById("habitoArquivadoEdit").value,
+      archived: document.getElementById("habitoArquivadoEdit").value === "true",
     };
 
-    const { data, error } = await supa.update(editItemId, updatedData);
+    const { error } = await supa.update(editItemId, updatedData);
     if (error) return alertError("Erro ao atualizar hábito", error);
+
+    modalEditarHabito.hide();
 
     const index = allHabits.findIndex((h) => h.id === editItemId);
     if (index !== -1) {
-      allHabits[index] = data;
+      allHabits[index] = { ...allHabits[index], ...updatedData };
     }
-
-    renderHabitos(allHabits);
-    updateSummary();
-    modalEditarHabito.hide();
-    editItemId = null;
   }
 
-  window.toggleArquivarHabito = async (id) => {
-    const habito = allHabits.find((h) => h.id === id);
-    if (!habito) return;
-
-    const novoEstadoArquivado = !habito.archived;
-    const acao = novoEstadoArquivado ? "arquivar" : "desarquivar";
-
-    if (!confirm(`Tem certeza que deseja ${acao} este hábito?`)) return;
-
-    const { data, error } = await supa.update(id, {
-      archived: novoEstadoArquivado,
+  document
+    .getElementById("modalEditarHabito")
+    .addEventListener("hidden.bs.modal", () => {
+      if (editItemId) {
+        renderHabitos(allHabits);
+        updateSummary();
+        editItemId = null;
+      }
     });
-
-    if (error) return alertError(`Erro ao ${acao} hábito`, error);
-
-    const index = allHabits.findIndex((h) => h.id === id);
-    if (index !== -1) {
-      allHabits[index] = data;
-    }
-    renderHabitos(allHabits);
-    updateSummary();
-  };
 
   searchInput.addEventListener("input", (e) => {
     const searchTerm = e.target.value.toLowerCase();
@@ -208,6 +195,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         (habito.category && habito.category.toLowerCase().includes(searchTerm))
     );
     renderHabitos(filteredHabits);
+  });
+
+  listaHabitos.addEventListener("click", async (e) => {
+    const button = e.target.closest("button[data-action]");
+    if (!button) return;
+
+    const action = button.dataset.action;
+    const id = parseInt(button.dataset.id, 10);
+
+    if (action === "edit") {
+      preencherModalEdicao(id);
+    }
+
+    if (action === "toggle-archive") {
+      const habito = allHabits.find((h) => h.id === id);
+      if (!habito) return;
+
+      const novoEstadoArquivado = !habito.archived;
+      const acaoVerbo = novoEstadoArquivado ? "arquivar" : "desarquivar";
+
+      if (!confirm(`Tem certeza que deseja ${acaoVerbo} este hábito?`)) return;
+
+      const updatePayload = {
+        archived: novoEstadoArquivado,
+        user_id: userId,
+      };
+
+      const { error } = await supa.update(id, updatePayload);
+
+      if (error) return alertError(`Erro ao ${acaoVerbo} hábito`, error);
+
+      const index = allHabits.findIndex((h) => h.id === id);
+      if (index !== -1) {
+        allHabits[index].archived = novoEstadoArquivado;
+      }
+      renderHabitos(allHabits);
+      updateSummary();
+    }
   });
 
   formHabito.addEventListener("submit", adicionarHabitos);
